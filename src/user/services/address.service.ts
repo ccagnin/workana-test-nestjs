@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Address } from '../entities/address.entity'
 import { HttpService } from '@nestjs/axios'
-import { firstValueFrom } from 'rxjs'
 import { User } from '../entities/user.entity'
+import { AddressValidation } from '../validations/address.validation'
 
 @Injectable()
 export class AddressService {
@@ -14,18 +14,17 @@ export class AddressService {
     private httpService: HttpService,
   ) {}
 
-  async findAddressByZip(zip: string): Promise<any> {
-    const response = await firstValueFrom(
-      this.httpService.get(`https://viacep.com.br/ws/${zip}/json`),
-    )
-
-    return response.data
+  async validateAddress(zip: string): Promise<void> {
+    const isValid = await AddressValidation.validateZip(zip, this.httpService)
+    if (!isValid) throw new BadRequestException('CEP inválido')
   }
 
   async createWithUser(
     addressData: Partial<Address>,
     user: User,
   ): Promise<Address> {
+    await this.validateAddress(addressData.zip)
+
     const address = this.addressRepository.create({
       ...addressData,
       user,

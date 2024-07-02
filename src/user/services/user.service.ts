@@ -30,14 +30,17 @@ export class UserService {
     })
     const savedUser = await this.usersRepository.save(newUser)
 
-    const savedAddress = await this.addressService.createWithUser(
-      addresses,
-      savedUser,
-    )
-
-    savedUser.addresses = savedAddress
-
-    return this.usersRepository.save(savedUser)
+    try {
+      const savedAddress = await this.addressService.createWithUser(
+        addresses,
+        savedUser,
+      )
+      savedUser.addresses = savedAddress
+      return this.usersRepository.save(savedUser)
+    } catch (error) {
+      await this.usersRepository.remove(savedUser)
+      throw error
+    }
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
