@@ -6,14 +6,12 @@ export const setTokens = (
   refreshToken: string,
 ) => {
   res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'strict',
+    httpOnly: false,
+    sameSite: 'lax',
   })
 
   res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'strict',
+    httpOnly: false,
+    sameSite: 'lax',
   })
 }
