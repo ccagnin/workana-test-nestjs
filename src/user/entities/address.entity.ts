@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { User } from './user.entity'
 
 @Entity()
@@ -15,6 +15,9 @@ export class Address {
   @Column()
   number: string
 
+  @Column({ nullable: true })
+  complement?: string
+
   @Column()
   city: string
 
@@ -24,6 +27,6 @@ export class Address {
   @Column()
   zip: string
 
-  @ManyToOne(() => User, (user) => user.addresses)
+  @OneToOne(() => User, (user) => user.addresses)
   user: User
 }

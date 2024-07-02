@@ -1,4 +1,10 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import {
+  Column,
+  Entity,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  JoinColumn,
+} from 'typeorm'
 import { Address } from './address.entity'
 
 @Entity()
@@ -15,12 +21,16 @@ export class User {
   @Column()
   password: string
 
-  @OneToMany(() => Address, (address) => address.user, { cascade: true })
-  addresses: Address[]
+  @OneToOne(() => Address, (address) => address.user, { cascade: true })
+  @JoinColumn()
+  addresses: Address
+
+  @Column({ nullable: true })
+  refreshToken: string | null
 
   @Column({ nullable: true })
   resetPasswordToken: string | null
 
   @Column({ nullable: true })
-  resetPasswordExipires: Date | null
+  resetPasswordExpires: Date | null
 }
