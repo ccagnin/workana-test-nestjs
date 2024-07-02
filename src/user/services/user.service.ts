@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, MoreThan } from 'typeorm'
 import { User } from '../entities/user.entity'
@@ -6,12 +6,15 @@ import { AddressService } from './address.service'
 import { CreateUserDto } from '../dto/create-user.dto'
 import { EmailAlreadyExistsException } from '../exceptions/user.exception'
 import * as bcrypt from 'bcryptjs'
+import { v4 as uuidv4 } from 'uuid'
+import { FakeMailerService } from 'src/fake-mailer/services/fake-mailer.service'
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
     private addressService: AddressService,
+    private mailerService: FakeMailerService,
   ) {}
 
   async create(user: CreateUserDto): Promise<User> {
@@ -73,5 +76,44 @@ export class UserService {
         resetPasswordExpires: MoreThan(new Date()),
       },
     })
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.findByEmail(email)
+    if (!user) {
+      throw new BadRequestException('Email não encontrado')
+    }
+
+    const resetToken = uuidv4()
+    const resetPasswordExpires = new Date()
+    resetPasswordExpires.setHours(resetPasswordExpires.getHours() + 1)
+    await this.update(user.id, {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires,
+    })
+
+    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`
+
+    await this.mailerService.sendPasswordResetEmail(
+      user.email,
+      resetUrl,
+      user.name,
+    )
+  }
+
+  async resetPassword(token: string, password: string) {
+    const user = await this.findByResetPasswordToken(token)
+    if (!user || user.resetPasswordExpires < new Date()) {
+      throw new BadRequestException('Token inválido ou expirado')
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+    await this.update(user.id, {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    })
+
+    return { message: 'Senha alterada com sucesso!' }
   }
 }

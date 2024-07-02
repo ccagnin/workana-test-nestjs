@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { User } from './user/entities/user.entity'
 import { Address } from './user/entities/address.entity'
 import { ConfigModule } from '@nestjs/config'
+import { FakeMailerModule } from './fake-mailer/modules/fake-mailer.module'
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ConfigModule } from '@nestjs/config'
     }),
     AuthModule,
     UserModule,
+    FakeMailerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
