@@ -18,44 +18,20 @@ export class AuthService {
   async signUp(createUserDto: CreateUserDto) {
     const newUser = await this.userService.create(createUserDto)
 
-    const accessToken = this.jwtService.sign({
-      sub: newUser.id,
-      user: newUser.email,
-    })
+    const tokens = await this.getTokens(newUser.id, newUser.email)
+    await this.updateRefreshToken(newUser.id, tokens.refreshToken)
 
-    const refreshToken = this.jwtService.sign(
-      { sub: newUser.id, user: newUser.email },
-      {
-        secret: this.configService.get<string>('SECRET_REFRESH'),
-        expiresIn: '7d',
-      },
-    )
-
-    await this.updateRefreshToken(newUser.id, refreshToken)
-
-    return { accessToken, refreshToken }
+    return { ...this.filterUserData(newUser), ...tokens }
   }
 
   async signIn(authDto: AuthDto) {
     const user = await this.validateUser(authDto.email, authDto.password)
     if (!user) throw new UnauthorizedException()
 
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
-      user: user.email,
-    })
+    const tokens = await this.getTokens(user.id, user.email)
+    await this.updateRefreshToken(user.id, tokens.refreshToken)
 
-    const refreshToken = this.jwtService.sign(
-      { sub: user.id, user: user.email },
-      {
-        secret: this.configService.get<string>('SECRET_REFRESH'),
-        expiresIn: '7d',
-      },
-    )
-
-    await this.updateRefreshToken(user.id, refreshToken)
-
-    return { accessToken, refreshToken }
+    return { ...this.filterUserData(user), ...tokens }
   }
 
   async logout(userId: string) {
@@ -75,7 +51,16 @@ export class AuthService {
     await this.userService.update(userId, { refreshToken: hashedRefreshToken })
   }
 
-  async getTokens(userId: string, email: string) {
+  private filterUserData(user: User) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      address: user.addresses,
+    }
+  }
+
+  private async getTokens(userId: string, email: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         { sub: userId, user: email },
