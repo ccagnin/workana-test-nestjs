@@ -15,7 +15,7 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy'
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('SECRET_KEY'),
-        signOptions: { expiresIn: '15m' },
+        signOptions: { expiresIn: '60m' },
       }),
     }),
     ConfigModule,
